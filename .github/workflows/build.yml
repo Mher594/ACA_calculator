@@ -1,0 +1,58 @@
+name: build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  # Allows to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-tests:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            triplet: x64-windows-release
+            build-type: Release
+          - os: ubuntu-latest
+            triplet: x64-linux-release
+            build-type: Release
+          - os: macos-latest
+            triplet: x64-osx-release
+            build-type: Release
+
+    steps:
+      - name: Install Dependencies (Linux)
+        run: sudo apt install libx11-dev libxft-dev libxext-dev libgles2-mesa-dev libdbus-1-dev libxi-dev libxtst-dev
+        if: matrix.os == 'ubuntu-latest'
+      - name: Install Dependencies (macOS)
+        run: brew install autoconf automake libtool
+        if: matrix.os == 'macos-latest'
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Restore artifacts, or setup vcpkg for building artifacts
+        uses: lukka/run-vcpkg@v10
+        with:
+          vcpkgDirectory: "${{ github.workspace }}/vcpkg"
+          vcpkgGitCommitId: "a7b6122f6b6504d16d96117336a0562693579933"
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B make -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DCMAKE_TOOLCHAIN_FILE='${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake'
+      - name: Build
+        working-directory: ./make
+        run: |
+          rm -rf ../vcpkg/buildtrees
+          rm -rf ../vcpkg/downloads
+          cmake --build . --config ${{ matrix.build-type }} --parallel $(nproc)

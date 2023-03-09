@@ -54,6 +54,4 @@ jobs:
       - name: Build
         working-directory: ./make
         run: |
-          rm -rf ../vcpkg/buildtrees
-          rm -rf ../vcpkg/downloads
           cmake --build . --config ${{ matrix.build-type }} --parallel $(nproc)

@@ -21,9 +21,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
-          - os: windows-latest
-            triplet: x64-windows-release
-            build-type: Release
+          # windows builds are failing because of no disk space
+          #- os: windows-latest
+          #  triplet: x64-windows-release
+          #  build-type: Release
           - os: ubuntu-latest
             triplet: x64-linux-release
             build-type: Release
